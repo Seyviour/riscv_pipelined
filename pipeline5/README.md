@@ -1,5 +1,11 @@
-A pipelined implementation of the base RV32I Instruction set.
-This implementation is based on the description in Digital Design and Computer Architecture (Harris and Harris)
+# `pipeline5`
 
+This directory contains the canonical five-stage RV32I pipeline implementation and its baseline testbench.
 
-TODO: Expand to cover all the RV32I specification
+Use the repo-root `Makefile` for all supported workflows:
+
+- `make compile`
+- `make test`
+- `make clean`
+
+The canonical Icarus source manifest is `pipeline5/module_list.txt`, and generated artifacts are written under `build/pipeline5/`.

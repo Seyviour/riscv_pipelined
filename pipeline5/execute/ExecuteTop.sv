@@ -1,9 +1,3 @@
-// `include "/home/saviour/study/riscv/pipeline5/execute/ExecuteState.sv"
-// `include "/home/saviour/study/riscv/pipeline5/execute/Resolve.sv"
-// `include "/home/saviour/study/riscv/pipeline5/execute/ALU.sv"
-// `include "/home/saviour/study/riscv/pipeline5/generic/adder.sv"
-
-
 module ExecuteTop #(
     parameter
     word_width = 32

@@ -1,5 +1,3 @@
-// `include "/home/saviour/study/riscv/pipeline5/generic/mux_3_1.sv"
-
 module writebackTOP #(
     parameter
     word_width = 32

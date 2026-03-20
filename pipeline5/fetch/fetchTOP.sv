@@ -1,6 +1,3 @@
-// `include "/home/saviour/study/riscv/pipeline5/fetch/progCounter.sv"
-// `include "/home/saviour/study/riscv/pipeline5/arch_state/memory.sv"
-
 module FetchTop #(
     parameter counter_width = 32,
     word_width = 32

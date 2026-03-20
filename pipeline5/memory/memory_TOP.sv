@@ -1,5 +1,3 @@
-// `include "/home/saviour/study/riscv/pipeline5/memory/memory_state.sv"
-
 module memoryTOP #(
     parameter
     word_width = 32

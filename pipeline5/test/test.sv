@@ -1,44 +1,59 @@
-module testbench();
-logic clk;
-logic reset;
-logic [31:0] WriteData, DataAdr;
+`timescale 1ns/1ps
+
+module testbench #(
+    parameter PROGRAM_FILE = "pipeline5/test/test_instructions.txt",
+    parameter DUMPFILE = "build/pipeline5/test32.vcd",
+    parameter int MAX_CYCLES = 500
+) ();
+logic clk = 1'b0;
+logic reset = 1'b1;
+logic [31:0] WriteData;
+logic [31:0] DataAdr;
 logic MemWrite;
-// instantiate device to be tested
+integer cycles = 0;
 
-
-
- RV32PipelinedTOP dut(clk, reset, WriteData, DataAdr, MemWrite);
-
-
-// initialize test
-initial
-    begin
-        reset <= 1; # 22; reset <= 0;
-    end
+RV32PipelinedTOP #(
+    .data_file(PROGRAM_FILE)
+) dut (
+    .clk(clk),
+    .reset(reset),
+    .WriteDataM(WriteData),
+    .ALUResultM(DataAdr),
+    .MemWrite(MemWrite)
+);
 
 initial begin
-    $dumpfile("test32.vcd");
+    #22 reset = 1'b0;
+end
+
+initial begin
+    $dumpfile(DUMPFILE);
     $dumpvars(0, dut);
 end
-// generate clock to sequence tests
-always
-    begin
-      clk <= 1; # 5; clk <= 0; # 5;
+
+always #5 clk = ~clk;
+
+always @(negedge clk) begin
+    if (reset) begin
+        cycles = 0;
+    end else begin
+        cycles = cycles + 1;
     end
 
-// check results
-always @(negedge clk)
-    begin
-        if(MemWrite) begin
-            //$monitor("time=%0t, WriteData=%WriteData, b=%DataAddr", $time, WriteData, DataAdr);
-            if(DataAdr === 100 & WriteData === 25) begin
-                $display("Simulation succeeded");
-                $stop;
-            end else if (DataAdr !== 96) begin
-                $display("Simulaton failed");
-                $stop;
-            end
+    if (!reset && MemWrite) begin
+        if ((DataAdr === 32'd100) && (WriteData === 32'd25)) begin
+            $display("Simulation succeeded");
+            $finish;
+        end
+
+        if (DataAdr !== 32'd96) begin
+            $fatal(1, "Simulation failed: write addr=%0d data=%0d", DataAdr, WriteData);
         end
     end
+
+    if (!reset && (cycles >= MAX_CYCLES)) begin
+        $fatal(1, "Simulation timed out after %0d cycles", cycles);
+    end
+end
 
 endmodule

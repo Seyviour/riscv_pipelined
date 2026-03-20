@@ -1,8 +1,4 @@
 // `default_nettype none
-// `include "/home/saviour/study/riscv/pipeline5/decode/genDecode.sv"
-// `include "/home/saviour/study/riscv/pipeline5/decode/ALUDecoder.sv"
-
-
 module controlTOP #(
     parameter
     word_width = 32

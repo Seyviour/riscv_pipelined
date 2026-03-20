@@ -1,11 +1,5 @@
 // `default_nettype none
 
-// `include "/home/saviour/study/riscv/pipeline5/decode/decodeState.sv"
-// `include "/home/saviour/study/riscv/pipeline5/decode/extend.sv"
-// `include "/home/saviour/study/riscv/pipeline5/decode/controlTOP.sv"
-// `include "/home/saviour/study/riscv/pipeline5/decode/split.sv"
-
-
 module decodeTOP #(
     parameter
     word_width = 32

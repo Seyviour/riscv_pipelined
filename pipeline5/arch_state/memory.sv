@@ -1,9 +1,8 @@
 module memory #(
-    parameter
-    data_file = "",
-    word_size = 32, 
-    address_width = 32,
-    no_words = 64
+    parameter data_file = "",
+    parameter int word_size = 32,
+    parameter int address_width = 32,
+    parameter int no_words = 64
 ) (
     input logic clk, we, 
     input logic [address_width-1: 0] addr,
@@ -12,10 +11,14 @@ module memory #(
 );
     logic [word_size-1: 0] RAM [0:no_words-1];
     logic [31:2] this_address;
+    integer idx;
+
     initial begin
-        // if (data_file != "") begin
+        for (idx = 0; idx < no_words; idx = idx + 1)
+            RAM[idx] = '0;
+
+        if (data_file != "")
             $readmemh(data_file, RAM);
-        // end 
     end
 
     assign this_address = addr[31:2];
@@ -27,14 +30,4 @@ module memory #(
         if (we)
             RAM[addr[31:2]] <= wr_data; // word aligned
             
-    
-    
-    // integer idx; 
-    // initial begin
-    //     $dumpfile("cRAM.vcd");
-    //     $dumpvars(0, memory);
-    //     for (idx = 0; idx < no_words; idx = idx + 1) begin
-    //         $dumpvars(0, RAM[idx]);
-    //     end
-    // end
 endmodule
