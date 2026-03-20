@@ -25,6 +25,12 @@ logic MemWriteE;
 logic RegWriteM;
 logic RegWriteW;
 logic PCSrcE;
+logic MemHalfD;
+logic LoadUnsignedD;
+logic MemHalfE;
+logic LoadUnsignedE;
+logic MemHalfM;
+logic LoadUnsignedM;
 
 logic [word_width-1:0] instrF;
 logic [word_width-1:0] PCF;
@@ -38,9 +44,14 @@ logic [word_width-1:0] ALUResultE;
 logic [word_width-1:0] WriteDataE;
 logic [word_width-1:0] PCPlus4M;
 logic [word_width-1:0] ReadDataM;
+logic [word_width-1:0] ReadDataRawM;
+logic [word_width-1:0] DataMemWriteData;
 logic [word_width-1:0] ResultW;
 logic [word_width-1:0] RD1;
 logic [word_width-1:0] RD2;
+logic [15:0] ReadDataHalfM;
+logic IsHalfStoreM;
+logic IsHalfLoadM;
 
 logic [r_address_width-1:0] Rs1D;
 logic [r_address_width-1:0] Rs2D;
@@ -87,6 +98,8 @@ decodeTOP #(.word_width(word_width)) thisDecodeStage (
     .BranchD(BranchD),
     .ALUControlD(ALUControlD),
     .ALUSrcD(ALUSrcD),
+    .MemHalfD(MemHalfD),
+    .LoadUnsignedD(LoadUnsignedD),
     .PCPlus4D(PCPlus4D),
     .PCD(PCD)
 );
@@ -102,6 +115,8 @@ ExecuteTop #(.word_width(word_width)) thisExecuteStage (
     .BranchD(BranchD),
     .ALUControlD(ALUControlD),
     .ALUSrcD(ALUSrcD),
+    .MemHalfD(MemHalfD),
+    .LoadUnsignedD(LoadUnsignedD),
     .RD1(RD1),
     .RD2(RD2),
     .ImmExtD(ImmExtD),
@@ -117,6 +132,8 @@ ExecuteTop #(.word_width(word_width)) thisExecuteStage (
     .RegWriteE(RegWriteE),
     .ResultSrcE(ResultSrcE),
     .MemWriteE(MemWriteE),
+    .MemHalfE(MemHalfE),
+    .LoadUnsignedE(LoadUnsignedE),
     .Rs1E(Rs1E),
     .Rs2E(Rs2E),
     .RdE(RdE),
@@ -133,6 +150,8 @@ memoryTOP #(.word_width(word_width)) thisMemoryStage (
     .RegWriteE(RegWriteE),
     .ResultSrcE(ResultSrcE),
     .MemWriteE(MemWriteE),
+    .MemHalfE(MemHalfE),
+    .LoadUnsignedE(LoadUnsignedE),
     .ALUResultE(ALUResultE),
     .WriteDataE(WriteDataE),
     .RdE(RdE),
@@ -140,6 +159,8 @@ memoryTOP #(.word_width(word_width)) thisMemoryStage (
     .RegWriteM(RegWriteM),
     .ResultSrcM(ResultSrcM),
     .MemWriteM(MemWrite),
+    .MemHalfM(MemHalfM),
+    .LoadUnsignedM(LoadUnsignedM),
     .ALUResultM(ALUResultM),
     .WriteDataM(WriteDataM),
     .RdM(RdM),
@@ -203,8 +224,22 @@ memory #(.data_file("")) thisDataMemory (
     .clk(clk),
     .we(MemWrite),
     .addr(ALUResultM),
-    .wr_data(WriteDataM),
-    .rd_data(ReadDataM)
+    .wr_data(DataMemWriteData),
+    .rd_data(ReadDataRawM)
 );
+
+assign IsHalfStoreM = MemHalfM && MemWrite;
+assign IsHalfLoadM = MemHalfM && (ResultSrcM == 2'b01);
+assign ReadDataHalfM = ALUResultM[1] ? ReadDataRawM[31:16] : ReadDataRawM[15:0];
+assign DataMemWriteData = IsHalfStoreM
+    ? (ALUResultM[1]
+        ? {WriteDataM[15:0], ReadDataRawM[15:0]}
+        : {ReadDataRawM[31:16], WriteDataM[15:0]})
+    : WriteDataM;
+assign ReadDataM = IsHalfLoadM
+    ? (LoadUnsignedM
+        ? {16'b0, ReadDataHalfM}
+        : {{16{ReadDataHalfM[15]}}, ReadDataHalfM})
+    : ReadDataRawM;
 
 endmodule
