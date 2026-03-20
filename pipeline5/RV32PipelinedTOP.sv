@@ -19,17 +19,20 @@ logic RegWriteD;
 logic MemWriteD;
 logic JumpD;
 logic BranchD;
+logic [2:0] BranchKindD;
 logic ALUSrcD;
+logic [1:0] SrcASelectD;
+logic JalrD;
 logic RegWriteE;
 logic MemWriteE;
 logic RegWriteM;
 logic RegWriteW;
 logic PCSrcE;
-logic MemHalfD;
+logic [1:0] MemSizeD;
 logic LoadUnsignedD;
-logic MemHalfE;
+logic [1:0] MemSizeE;
 logic LoadUnsignedE;
-logic MemHalfM;
+logic [1:0] MemSizeM;
 logic LoadUnsignedM;
 
 logic [word_width-1:0] instrF;
@@ -46,11 +49,15 @@ logic [word_width-1:0] PCPlus4M;
 logic [word_width-1:0] ReadDataM;
 logic [word_width-1:0] ReadDataRawM;
 logic [word_width-1:0] DataMemWriteData;
+logic [word_width-1:0] ForwardResultM;
 logic [word_width-1:0] ResultW;
 logic [word_width-1:0] RD1;
 logic [word_width-1:0] RD2;
+logic [7:0] ReadDataByteM;
 logic [15:0] ReadDataHalfM;
+logic IsByteStoreM;
 logic IsHalfStoreM;
+logic IsByteLoadM;
 logic IsHalfLoadM;
 
 logic [r_address_width-1:0] Rs1D;
@@ -67,7 +74,14 @@ logic [1:0] ResultSrcE;
 logic [1:0] ResultSrcM;
 logic [1:0] forwardAE;
 logic [1:0] forwardBE;
-logic [2:0] ALUControlD;
+logic [3:0] ALUControlD;
+
+localparam logic [1:0] RESULT_ALU = 2'b00;
+localparam logic [1:0] RESULT_LOAD = 2'b01;
+localparam logic [1:0] RESULT_PCPLUS4 = 2'b10;
+localparam logic [1:0] MEM_BYTE = 2'b00;
+localparam logic [1:0] MEM_HALF = 2'b01;
+localparam logic [1:0] MEM_WORD = 2'b10;
 
 FetchTop #(.word_width(word_width)) thisFetchStage (
     .clk(clk),
@@ -96,9 +110,12 @@ decodeTOP #(.word_width(word_width)) thisDecodeStage (
     .FlushD(FlushD),
     .JumpD(JumpD),
     .BranchD(BranchD),
+    .BranchKindD(BranchKindD),
     .ALUControlD(ALUControlD),
     .ALUSrcD(ALUSrcD),
-    .MemHalfD(MemHalfD),
+    .SrcASelectD(SrcASelectD),
+    .JalrD(JalrD),
+    .MemSizeD(MemSizeD),
     .LoadUnsignedD(LoadUnsignedD),
     .PCPlus4D(PCPlus4D),
     .PCD(PCD)
@@ -113,9 +130,12 @@ ExecuteTop #(.word_width(word_width)) thisExecuteStage (
     .MemWriteD(MemWriteD),
     .JumpD(JumpD),
     .BranchD(BranchD),
+    .BranchKindD(BranchKindD),
     .ALUControlD(ALUControlD),
     .ALUSrcD(ALUSrcD),
-    .MemHalfD(MemHalfD),
+    .SrcASelectD(SrcASelectD),
+    .JalrD(JalrD),
+    .MemSizeD(MemSizeD),
     .LoadUnsignedD(LoadUnsignedD),
     .RD1(RD1),
     .RD2(RD2),
@@ -125,14 +145,14 @@ ExecuteTop #(.word_width(word_width)) thisExecuteStage (
     .RdD(RdD),
     .PCD(PCD),
     .PCPlus4D(PCPlus4D),
-    .ALUResultM(ALUResultM),
+    .ForwardResultM(ForwardResultM),
     .forwardAE(forwardAE),
     .forwardBE(forwardBE),
     .ResultW(ResultW),
     .RegWriteE(RegWriteE),
     .ResultSrcE(ResultSrcE),
     .MemWriteE(MemWriteE),
-    .MemHalfE(MemHalfE),
+    .MemSizeE(MemSizeE),
     .LoadUnsignedE(LoadUnsignedE),
     .Rs1E(Rs1E),
     .Rs2E(Rs2E),
@@ -150,7 +170,7 @@ memoryTOP #(.word_width(word_width)) thisMemoryStage (
     .RegWriteE(RegWriteE),
     .ResultSrcE(ResultSrcE),
     .MemWriteE(MemWriteE),
-    .MemHalfE(MemHalfE),
+    .MemSizeE(MemSizeE),
     .LoadUnsignedE(LoadUnsignedE),
     .ALUResultE(ALUResultE),
     .WriteDataE(WriteDataE),
@@ -159,7 +179,7 @@ memoryTOP #(.word_width(word_width)) thisMemoryStage (
     .RegWriteM(RegWriteM),
     .ResultSrcM(ResultSrcM),
     .MemWriteM(MemWrite),
-    .MemHalfM(MemHalfM),
+    .MemSizeM(MemSizeM),
     .LoadUnsignedM(LoadUnsignedM),
     .ALUResultM(ALUResultM),
     .WriteDataM(WriteDataM),
@@ -228,18 +248,58 @@ memory #(.data_file("")) thisDataMemory (
     .rd_data(ReadDataRawM)
 );
 
-assign IsHalfStoreM = MemHalfM && MemWrite;
-assign IsHalfLoadM = MemHalfM && (ResultSrcM == 2'b01);
+always @(*) begin
+    case (ALUResultM[1:0])
+        2'b00: ReadDataByteM = ReadDataRawM[7:0];
+        2'b01: ReadDataByteM = ReadDataRawM[15:8];
+        2'b10: ReadDataByteM = ReadDataRawM[23:16];
+        default: ReadDataByteM = ReadDataRawM[31:24];
+    endcase
+end
+
+assign IsByteStoreM = MemWrite && (MemSizeM == MEM_BYTE);
+assign IsHalfStoreM = MemWrite && (MemSizeM == MEM_HALF);
+assign IsByteLoadM = (ResultSrcM == RESULT_LOAD) && (MemSizeM == MEM_BYTE);
+assign IsHalfLoadM = (ResultSrcM == RESULT_LOAD) && (MemSizeM == MEM_HALF);
 assign ReadDataHalfM = ALUResultM[1] ? ReadDataRawM[31:16] : ReadDataRawM[15:0];
-assign DataMemWriteData = IsHalfStoreM
-    ? (ALUResultM[1]
-        ? {WriteDataM[15:0], ReadDataRawM[15:0]}
-        : {ReadDataRawM[31:16], WriteDataM[15:0]})
-    : WriteDataM;
-assign ReadDataM = IsHalfLoadM
-    ? (LoadUnsignedM
-        ? {16'b0, ReadDataHalfM}
-        : {{16{ReadDataHalfM[15]}}, ReadDataHalfM})
-    : ReadDataRawM;
+
+always @(*) begin
+    DataMemWriteData = WriteDataM;
+
+    if (IsByteStoreM) begin
+        case (ALUResultM[1:0])
+            2'b00: DataMemWriteData = {ReadDataRawM[31:8], WriteDataM[7:0]};
+            2'b01: DataMemWriteData = {ReadDataRawM[31:16], WriteDataM[7:0], ReadDataRawM[7:0]};
+            2'b10: DataMemWriteData = {ReadDataRawM[31:24], WriteDataM[7:0], ReadDataRawM[15:0]};
+            default: DataMemWriteData = {WriteDataM[7:0], ReadDataRawM[23:0]};
+        endcase
+    end else if (IsHalfStoreM) begin
+        DataMemWriteData = ALUResultM[1]
+            ? {WriteDataM[15:0], ReadDataRawM[15:0]}
+            : {ReadDataRawM[31:16], WriteDataM[15:0]};
+    end
+end
+
+always @(*) begin
+    ReadDataM = ReadDataRawM;
+
+    if (IsByteLoadM) begin
+        ReadDataM = LoadUnsignedM
+            ? {24'b0, ReadDataByteM}
+            : {{24{ReadDataByteM[7]}}, ReadDataByteM};
+    end else if (IsHalfLoadM) begin
+        ReadDataM = LoadUnsignedM
+            ? {16'b0, ReadDataHalfM}
+            : {{16{ReadDataHalfM[15]}}, ReadDataHalfM};
+    end
+end
+
+always_comb begin
+    case (ResultSrcM)
+        RESULT_LOAD: ForwardResultM = ReadDataM;
+        RESULT_PCPLUS4: ForwardResultM = PCPlus4M;
+        default: ForwardResultM = ALUResultM;
+    endcase
+end
 
 endmodule

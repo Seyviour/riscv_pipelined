@@ -24,9 +24,12 @@ module decodeTOP #(
     output logic MemWriteD,
     output logic JumpD,
     output logic BranchD,
-    output logic [2:0] ALUControlD,
+    output logic [2:0] BranchKindD,
+    output logic [3:0] ALUControlD,
     output logic ALUSrcD,
-    output logic MemHalfD,
+    output logic [1:0] SrcASelectD,
+    output logic JalrD,
+    output logic [1:0] MemSizeD,
     output logic LoadUnsignedD,
     output logic [word_width-1: 0] PCPlus4D,
     output logic [word_width-1: 0] PCD
@@ -43,7 +46,7 @@ logic [31:7] i_31_7;
 logic [6:0] op;
 logic [14:12] funct3;
 logic funct7_5;
-logic [1:0] ImmSrcD;
+logic [2:0] ImmSrcD;
 
 decodeState #(.word_width(32)) thisDecodeState (
     .clk(clk),
@@ -88,10 +91,13 @@ controlTOP #(.word_width(word_width)) thisControl (
     .MemWriteD(MemWriteD),
     .JumpD(JumpD),
     .BranchD(BranchD),
+    .BranchKindD(BranchKindD),
     .ALUControlD(ALUControlD),
     .ALUSrcD(ALUSrcD),
     .ImmSrcD(ImmSrcD),
-    .MemHalfD(MemHalfD),
+    .SrcASelectD(SrcASelectD),
+    .JalrD(JalrD),
+    .MemSizeD(MemSizeD),
     .LoadUnsignedD(LoadUnsignedD)
 );
 

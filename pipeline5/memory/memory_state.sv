@@ -6,7 +6,7 @@ module memoryState #(
     input logic RegWriteE,
     input logic [1:0] ResultSrcE,
     input logic MemWriteE,
-    input logic MemHalfE,
+    input logic [1:0] MemSizeE,
     input logic LoadUnsignedE,
     input logic [word_width-1:0] ALUResultE,
     input logic [word_width-1:0] WriteDataE,
@@ -16,7 +16,7 @@ module memoryState #(
     output logic RegWriteM,
     output logic [1:0] ResultSrcM,
     output logic MemWriteM,
-    output logic MemHalfM,
+    output logic [1:0] MemSizeM,
     output logic LoadUnsignedM,
     output logic [word_width-1:0] ALUResultM,
     output logic [word_width-1:0] WriteDataM,
@@ -29,7 +29,7 @@ always_ff @(posedge clk) begin
         RdM <= 0;
         RegWriteM <= 0;
         MemWriteM <= 0;
-        MemHalfM <= 0;
+        MemSizeM <= 0;
         LoadUnsignedM <= 0;
         ResultSrcM <= 0;
         ALUResultM <= 0;
@@ -39,7 +39,7 @@ always_ff @(posedge clk) begin
         RdM <= RdE;
         RegWriteM <= RegWriteE;
         MemWriteM <= MemWriteE;
-        MemHalfM <= MemHalfE;
+        MemSizeM <= MemSizeE;
         LoadUnsignedM <= LoadUnsignedE;
         ResultSrcM <= ResultSrcE;
         ALUResultM <= ALUResultE;

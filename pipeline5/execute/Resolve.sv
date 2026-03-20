@@ -3,7 +3,7 @@ module Resolve #(
 ) (
     input logic [word_width-1: 0] RD1E, RD2E,
     input logic [word_width-1: 0] ImmExtE,
-    input logic [word_width-1: 0] ALUResultM,
+    input logic [word_width-1: 0] ForwardResultM,
     input logic [1:0] forwardAE, forwardBE,
     input logic ALUSrcE,
     input logic [word_width-1: 0] ResultW,
@@ -19,7 +19,7 @@ mux_3_1 #(.word_width(32)) muxA
         .sel(forwardAE),
         .in00(RD1E),
         .in01(ResultW),
-        .in10(ALUResultM),
+        .in10(ForwardResultM),
         .out(SrcAE)
     );
 
@@ -30,7 +30,7 @@ mux_3_1 #(.word_width(32)) muxB
         .sel(forwardBE),
         .in00(RD2E),
         .in01(ResultW),
-        .in10(ALUResultM),
+        .in10(ForwardResultM),
         .out(SrcBE_i)
     );
 
